@@ -25,7 +25,7 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/grievdesk_test
+      DATABASE_URL: postgresql+psycopg2://test:test@localhost:5432/grievdesk_test
       SECRET_KEY: ci-only-secret
       # Add GEMINI_API_KEY under Settings > Secrets and variables > Actions
       # only if your tests call Gemini live. Otherwise mock the API in tests.
