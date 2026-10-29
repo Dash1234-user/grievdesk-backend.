@@ -1,0 +1,38 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Flask / instance data
+instance/
+*.sqlite3
+*.db
+
+# User uploads (voice recordings etc.)
+uploads/
+recordings/
+
+# Logs
+*.log
+logs/
+
+# Node / React (for the frontend later)
+node_modules/
+dist/
+build/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
