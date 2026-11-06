@@ -1,144 +1,53 @@
-# GrievDesk Backend — Step 1: Foundation (Auth + Users)
+# GrievDesk frontend (steps 1 and 2)
 
-This is the first build milestone from the project brief: Flask skeleton, PostgreSQL
-connection, the `users` table, and working registration/login with JWT — enforcing
-the Secretary-uniqueness rule and the pending-approval flow for residents.
-No frontend yet — test everything with `curl`.
+React + Vite (JavaScript), Tailwind + shadcn-style components, React Router, TanStack Query, react-i18next.
+It talks to the Flask backend in `grievdesk-backend`.
 
-## 1. Setup on Ubuntu
+## Run it
 
-```bash
-# From inside the grievdesk-backend folder
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+1. Start your backend (`python run.py`, port 5000).
+2. In this folder:
 
-## 2. Create the PostgreSQL database
+       npm install
+       cp .env.example .env      # on Windows: copy .env.example .env
+       npm run dev
 
-```bash
-sudo -u postgres psql
-```
-Then inside the `psql` prompt:
-```sql
-CREATE USER grievdesk_user WITH PASSWORD 'changeme';
-CREATE DATABASE grievdesk OWNER grievdesk_user;
-\q
-```
+3. Open http://localhost:5173
 
-## 3. Configure environment
+Edit `.env` to set `VITE_API_URL` if your backend is not on http://localhost:5000, and `VITE_SOCIETY_NAME`
+for the header. Restart `npm run dev` after changing `.env`.
 
-```bash
-cp .env.example .env
-```
-Edit `.env` and make sure `DATABASE_URL` matches the user/password/db name you just
-created, and set a real `JWT_SECRET_KEY` (the file shows how to generate one).
+## What works now
 
-## 4. Run the database migration
+- Landing page, login, register (resident or Secretary), pending-approval message
+- Token handling: the JWT is stored in localStorage and sent as `Authorization: Bearer ...`
+- Any 401 from the API logs the user out and shows "Your session expired"
+- Role-aware app shell: sidebar, mobile drawer, search and notification buttons, profile and log out
+- Routes for every later screen, each showing a "built in step N" placeholder
+- UI language follows the user's saved preference (English strings only for now)
 
-```bash
-flask db init        # only the very first time
-flask db migrate -m "create users table"
-flask db upgrade
-```
+## First-time test flow
 
-This creates the `users` table, including the partial unique index that enforces
-"only one Secretary at a time" at the database level.
+1. Register as the Secretary (tick the Secretary box). It is approved automatically. Log in.
+2. Register a resident in another browser or a private window. Logging in shows "awaiting approval".
+3. Approve the resident. The approval screen is built in step 11, so until then call the API once.
+   Get your Secretary token from the browser (DevTools > Application > Local Storage > grievdesk_token),
+   find the resident's id in the register response or the database, then:
 
-## 5. Start the server
+       curl -X PATCH http://localhost:5000/api/users/2/approve -H "Authorization: Bearer YOUR_TOKEN"
 
-```bash
-python run.py
-```
+4. Log in as the resident.
 
-It should start on `http://localhost:5000`. Confirm it's alive:
-```bash
-curl http://localhost:5000/api/health
-# {"status":"ok"}
-```
+## Folder guide
 
-## 6. Test the registration + login flow
+    src/lib/api.js        every backend call goes through here (token, error handling)
+    src/lib/auth.jsx      login, register, logout, current user and role
+    src/lib/local.js      local(item, 'field') picks the translated "<field>_local" text
+    src/lib/constants.js  statuses, categories, roles. They match the backend exactly
+    src/locales/en.json   all UI text (hi.json and or.json come in the translations step)
+    src/components/       AppShell (sidebar), route guards, UI components
+    src/pages/            Landing, Login, Register, ComingSoon (placeholder)
 
-**Register the Secretary (first admin account):**
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "role": "admin",
-    "name": "Rajesh Sharma",
-    "phone": "9000000000",
-    "flat_no": "A-101",
-    "block_no": "A",
-    "gmail": "secretary@example.com",
-    "preferred_language": "en",
-    "password": "SecurePass123"
-  }'
-```
-Expect `201` with `"role": "secretary"` in the response.
+## Next steps
 
-**Try registering a second admin (should fail):**
-Run the same request again with a different gmail but `"role": "admin"` —
-expect `409 {"error": "secretary_already_exists"}`.
-
-**Register a resident:**
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "role": "resident",
-    "name": "Amit",
-    "phone": "9111111111",
-    "flat_no": "B-204",
-    "block_no": "B",
-    "gmail": "resident1@example.com",
-    "preferred_language": "or",
-    "password": "ResidentPass123"
-  }'
-```
-Expect `201` with `"approval_status": "pending"`.
-
-**Try logging in as that resident before approval (should fail):**
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"gmail": "resident1@example.com", "password": "ResidentPass123"}'
-```
-Expect `403 {"error": "pending_approval"}` — this confirms Edge Case 9 from the
-design doc is actually enforced, not just described.
-
-**Log in as the Secretary (works immediately, no approval needed):**
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"gmail": "secretary@example.com", "password": "SecurePass123"}'
-```
-Expect `200` with an `access_token` — save this, you'll need it for the
-approve-resident endpoint once it's built in a later step.
-
-## What's intentionally NOT built yet
-
-Approving the pending resident (`PATCH /api/users/<id>/approve`), and every other
-endpoint from the design doc's Section 9, come in the next steps — this milestone
-is deliberately just the foundation: schema + auth + the two uniqueness/approval
-rules, fully tested before anything else gets layered on top.
-
-## Project structure
-
-```
-grievdesk-backend/
-├── app/
-│   ├── __init__.py        # app factory
-│   ├── config.py          # env-based config
-│   ├── extensions.py      # db, migrate, jwt, cors instances
-│   ├── models/
-│   │   └── user.py        # User model + Role/ApprovalStatus constants
-│   ├── routes/
-│   │   └── auth.py        # /api/auth/register, /api/auth/login
-│   └── utils/
-│       └── decorators.py  # login_required, committee_or_secretary_required,
-│                           # secretary_required — ready for the next steps
-├── run.py
-├── requirements.txt
-├── .env.example
-└── README.md
-```
+Step 3 is the chat screen: type picker, messages, Recents.

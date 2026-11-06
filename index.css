@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 75 14% 97%;
+    --foreground: 165 23% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 165 23% 14%;
+    --primary: 165 76% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 30% 94%;
+    --secondary-foreground: 165 76% 18%;
+    --muted: 75 12% 93%;
+    --muted-foreground: 160 10% 32%;
+    --accent: 160 40% 92%;
+    --accent-foreground: 165 76% 18%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 10% 87%;
+    --input: 140 10% 80%;
+    --ring: 165 76% 24%;
+    --radius: 0.625rem;
+  }
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Oriya', sans-serif;
+  }
+  :focus-visible { @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background; }
+}
