@@ -51,3 +51,4 @@ urllib3==2.8.0
 websockets==16.1.1
 Werkzeug==3.1.9
 psycopg2-binary==2.9.9
+gunicorn==23.0.0
